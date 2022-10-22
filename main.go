@@ -100,7 +100,7 @@ func main() {
 	r.HandleFunc("/json/{key}", jsonHandler)
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "3333"
 	}
 
 	srv := &http.Server{

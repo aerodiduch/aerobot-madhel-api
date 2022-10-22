@@ -83,8 +83,12 @@ func jsonHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		RetrieveData(w, vars)
 	} else {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "{'detail':'Not found.'}")
+		jsonData := []byte(`{"detail":"Not found."}`)
+		w.Write(jsonData)
+		//fmt.Fprintf(w, "{'detail':'Not found.'}")
+
 	}
 	fmt.Println(r.Method, r.RequestURI, "-", r.UserAgent())
 
@@ -94,9 +98,13 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", HomeHandler)
 	r.HandleFunc("/json/{key}", jsonHandler)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
 	srv := &http.Server{
-		Addr:    "127.0.0.1:3333",
+		Addr:    ":" + port,
 		Handler: r,
 	}
 

@@ -85,9 +85,9 @@ func jsonHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		//jsonData := []byte(`{"detail":"Not found."}`)
-		//w.Write(jsonData)
-		fmt.Fprintf(w, "{'detail':'Not found.'}")
+		jsonData := []byte(`{"detail":"Not found."}`)
+		w.Write(jsonData)
+		//fmt.Fprintf(w, "{'detail':'Not found.'}")
 
 	}
 	fmt.Println(r.Method, r.RequestURI, "-", r.UserAgent())

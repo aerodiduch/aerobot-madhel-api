@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"text/template"
 	"time"
 
 	"github.com/go-redis/redis/v9"
@@ -18,6 +18,11 @@ import (
 var ctx = context.Background()
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
+	parsedTemplate, _ := template.ParseFiles("./html/index.html")
+	err := parsedTemplate.Execute(w, nil)
+	if err != nil {
+		fmt.Println("error renderizando html", err)
+	}
 
 }
 
@@ -40,7 +45,9 @@ func RetrieveData(w http.ResponseWriter, adKey string) {
 	val, err := rdb.Get(ctx, adKey).Result()
 	switch {
 	case err == redis.Nil:
-		fmt.Fprintf(w, "{'detail':'Not found.'}")
+		w.Header().Set("Content-Type", "application/json")
+		jsonData := []byte(`{"detail":"Not found."}`)
+		w.Write(jsonData)
 	case err != nil:
 		panic(err)
 	}
@@ -48,26 +55,9 @@ func RetrieveData(w http.ResponseWriter, adKey string) {
 
 }
 
-func RequestMadhel(airport string, w http.ResponseWriter) {
-	url := "https://datos.anac.gob.ar/madhel/api/v2/airports/" + airport // "/AER/"
-
-	client := http.Client{
-		Timeout: 3 * time.Second,
-	}
-
-	response, err := client.Get(url)
-	if err != nil {
-		if os.IsTimeout(err) {
-			fmt.Fprintf(w, "{'error':'timed_out'}")
-			return
-		}
-	}
-	data, _ := ioutil.ReadAll(response.Body)
-	fmt.Fprintf(w, string(data))
-
-}
-
 func jsonHandler(w http.ResponseWriter, r *http.Request) {
+
+	currentTime := time.Now()
 
 	auth_keys := []string{retrieveEnvVariables("API_KEY_1"), retrieveEnvVariables("API_KEY_2")}
 	vars := mux.Vars(r)["key"]
@@ -90,14 +80,16 @@ func jsonHandler(w http.ResponseWriter, r *http.Request) {
 		//fmt.Fprintf(w, "{'detail':'Not found.'}")
 
 	}
-	fmt.Println(r.Method, r.RequestURI, "-", r.UserAgent())
+	fmt.Println(currentTime.Format("2006-01-02 15:04:2"), r.Method, r.RequestURI, "-", r.UserAgent())
 
 }
 
 func main() {
 	r := mux.NewRouter()
+
 	r.HandleFunc("/", HomeHandler)
 	r.HandleFunc("/json/{key}", jsonHandler)
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3333"
@@ -109,5 +101,10 @@ func main() {
 	}
 
 	log.Println("Listening...")
-	srv.ListenAndServe()
+	if err := srv.ListenAndServe(); err != nil {
+		log.Fatal("ListenAndServe Error:\n", err)
+	}
 }
+
+// if err := srv.ListenAndServe(); err != nil {
+// 	log.Fatal("ListenAndServe: ", err)
